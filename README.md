@@ -60,6 +60,120 @@ UNIQUE (
 ```bash
 quit;
 ```
+Il database è stato creato. Per la normale amministrazione del database e per la creazione degli utenti virtuali potremo d'ora in poi servirci di phpMyAdmin, se lo abbiamo installato; altrimenti dovremo continuare ad utilizzare la shell di MySQL.
+
+## Configurazione di VSFTPD
+Facciamo prima di tutto una copia di backup del file originale di configurazione di VSTFPD, quindi creiamone uno personalizzato e editiamolo:
+```bash
+cp /etc/vsftpd.conf /etc/vsftpd.conf_orig
+cat /dev/null > /etc/vsftpd.conf
+nano /etc/vsftpd.conf
+```
+Il nostro file di configurazione avrà come contenuto:
+
+```bash
+# Standalone server
+listen=YES
+
+# Disabilito FTP anonimo
+anonymous_enable=NO
+#anon_upload_enable=NO
+#anon_mkdir_write_enable=NO
+#anon_other_write_enable=NO
+
+# Imposto la visualizzazione di messaggi
+dirmessage_enable=YES
+#force_dot_files=NO
+
+# Certificato per FTP via SSL
+rsa_cert_file=/etc/ssl/certs/vsftpd.pem
+
+
+################################
+# Configurazioni di base
+################################
+
+#hide_ids=YES
+listen_port=21
+connect_from_port_20=YES
+
+# Abilito le porte passive
+pasv_enable=YES
+pasv_min_port=60000
+pasv_max_port=65000
+pasv_addr_resolve=YES
+
+# Abilito utenti locali e/o virtuali
+local_enable=YES
+local_umask=022
+max_login_fails=3
+max_per_ip=4
+# Senza il server sarebbe read-only
+write_enable=YES
+
+# Definisco il sistema di autenticazione
+pam_service_name=vsftpd
+
+# Imposto la directory per le configurazioni speciali sugli utenti
+user_config_dir=/etc/vsftpd/user_conf
+
+# Imposto il banner di benvenuto
+ftpd_banner=EasyLAB Doc FTP Server
+#force_dot_files=yes
+
+# I file caricati hanno proprietario www-data
+chown_uploads=YES
+chown_username=www-data
+
+
+############################
+#Configuro la gabbia chroot
+############################
+chroot_local_user=YES
+secure_chroot_dir=/var/run/vsftpd
+user_sub_token=$USER
+local_root=/home/vsftpd/$USER
+
+# Mappo gli utenti verso un utente locale
+virtual_use_local_privs=YES
+
+# Attivo gli utenti virtuali
+guest_enable=YES
+
+# Ogni utente viene mappato come vsftpd
+guest_username=vsftpd
+nopriv_user=vsftpd
+
+
+##################
+#Gestione dei LOG
+##################
+
+log_ftp_protocol=YES
+vsftpd_log_file=/var/log/vsftpd.log
+dual_log_enable=YES
+xferlog_enable=YES
+xferlog_std_format=YES
+```
+L'elenco delle direttive di VSFTPD con una spiegazione dettagliata del significato è presente sul sito ufficiale: vsftpd.conf
+Una delle direttive specificate in vsftpd.conf è user_config_dir, che abbiamo impostato a /etc/vsftpd/user_conf. Questo parametro dice a VSFTPD dove cercare le impostazioni specifiche per ogni utente ed è il modo più semplice per avere una home diversa per ognuno di loro, ma anche per poter avere più users con la stessa home.
+Assicuriamoci quindi di creare la directory che conterrà le configurazioni specifiche:
+```bash
+mkdir -p /etc/vsftpd/user_conf
+```
+Il formato dei file è molto semplice; basta creare un file con il nome utente presente nel database MySQL e inserire poche righe di testo:
+
+```bash
+dirlist_enable=YES
+download_enable=YES
+local_root=/var/www/sitoweb
+```
+Impostiamo i permessi corretti:
+
+```bash
+chown -R vsftpd:www-data /var/www/sitoweb
+```
+
 
 
 
