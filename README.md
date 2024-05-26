@@ -71,7 +71,7 @@ nano /etc/vsftpd.conf
 ```
 Il nostro file di configurazione avrà come contenuto:
 
-```bash
+```c++
 # Standalone server
 listen=YES
 
@@ -173,6 +173,127 @@ Impostiamo i permessi corretti:
 ```bash
 chown -R vsftpd:www-data /var/www/sitoweb
 ```
+## Connessione al database MySQL
+Come ultima cosa dobbiamo istruire il nostro VSFTPD affinchè non cerchi gli utenti in /etc/passwd, ma nel database che abbiamo creato. Innanzitutto creiamo una copia di backup del file di configurazione, quindi ne impostiamo uno personalizzato:
+```bash
+cp /etc/pam.d/vsftpd /etc/pam.d/vsftpd_orig
+cat /dev/null > /etc/pam.d/vsftpd
+nano /etc/pam.d/vsftpd
+```
+con contenuto:
+```bash
+auth required pam_mysql.so user=vsftpd passwd=ftpdpass host=localhost db=vsftpd table=accounts usercolumn=username passwdcolumn=pass crypt=2 verbose=1 debug=1
+account required pam_mysql.so user=vsftpd passwd=ftpdpass host=localhost db=vsftpd table=accounts usercolumn=username passwdcolumn=pass crypt=2 verbose=1 debug=1
+```
+E' possibile cambiare i valori dei parametri crypt, debug e verbose a piacimento, tuttavia almeno all'inizio è preferibile avere dei log prolissi.
+A causa di un baco, è necessario installare anche le librerie:
+```bash
+apt-get install libgcc1 lib32gcc1 libx32gcc1 libpam-ldap
+```
+Non preoccupatevi della configurazione di `libpam-ldap` e lasciate tutte le impostazioni di default, a meno che non abbiate un server OpenLDAP attivo sulla macchina.
+Alla fine di tutto riavviamo il nostro server:
+```bash
+/etc/init.d/vsftpd restart
+```
+## Creazione del primo utente virtuale
+Per creare il nostro primo utente virtuale possiamo usare la shell di MySQL:
+```bash
+mysql -u root -p
+```
+```bash
+USE vsftpd;
+```
+Creeremo un utente chiamato `testuser` con password `secret`:
+```bash
+INSERT INTO accounts (username, pass, homedir) VALUES('testuser', PASSWORD('secret'), '/var/www/testuser');
+quit;
+```
+Purtroppo VSFTPD non crea la home directory automaticamente; dobbiamo quindi crearla a mano e impostare i permessi corretti:
+```bash
+mkdir /home/vsftpd/testuser
+chown vsftpd:nogroup /home/vsftpd/testuser
+```
+Creiamo infine il file di configurazione per il nostro utente, in modo che vengano sovrascritte le impostazioni di default di VSFTPD sulle homedir:
+```bash
+nano /etc/vsftpd/user_conf/testuser
+```
+con contenuto:
+```c++
+dirlist_enable=YES
+download_enable=YES
+local_root=/var/www/testuser
+```
+Se tutto è andato per il verso giusto, dovreste riuscire a puntare il vostro client FTP sul server appena installato ed effettuare il login con l'utente appena creato.
+
+## Configurazione di TLS
+Il protocollo FTP è un protocollo estremamente insicuro, poichè tutti i dati viaggiano in chiaro. Fortunatamente è possibile aumentare la sicurezza del nostro server configurando TLS per crittare tutte le comunicazioni. Iniziamo installando OpenSSL:
+```bash
+apt-get install openssl
+```
+Quindi creiamo il certificato da utilizzare per VSFTPD:
+```bash
+mkdir -p /etc/vsftpd/ssl
+```
+```bash
+chmod 700 /etc/vsftpd/ssl
+```
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:1024 -keyout /etc/vsftpd/ssl/vsftpd.pem -out /etc/vsftpd/ssl/vsftpd.pem
+```
+e inserendo le risposte che fanno al caso nostro:
+```c++
+Country Name (2 letter code) [AU]: IT
+State or Province Name (full name) [Some-State]: Italy
+Locality Name (eg, city) []: Lodi
+Organization Name (eg, company) [Internet Widgits Pty Ltd]: Ferdy FTP Server
+Organizational Unit Name (eg, section) []: Dipartimento IT
+Common Name (eg, YOUR name) []: serverferdy.local
+Email Address []: ferdy@xxxx.it
+```
+Quindi modifichiamo il file di configurazione di VSFTPD e aggiungiamo la sezione:
+```bash
+nano /etc/vsftpd.conf
+```
+```c++
+# Abilito SSL
+ssl_enable=YES
+allow_anon_ssl=YES
+
+# YES = forzo SSL per tutte le comunicazioni
+# NO = permetto anche comunicazioni non crittate
+force_local_data_ssl=NO
+force_local_logins_ssl=NO
+
+# Permetto TLS v1
+ssl_tlsv1=YES
+
+# Permetto SSL v2
+ssl_sslv2=YES
+
+# Permetto SSL v3
+ssl_sslv3=YES
+
+# Disabilito SSL session reuse (da usare con WinSCP)
+require_ssl_reuse=NO
+
+# Imposto il tipo di crittazione
+ssl_ciphers=HIGH
+
+# Il percorso del certificato
+rsa_cert_file=/etc/vsftpd/ssl/vsftpd.pem
+```
+Con un riavvio del server:
+
+```bash
+/etc/init.d/vsftpd restart
+```
+rendiamo attive le modifiche.
+Da adesso sarà possibile configurare il nostro client FTP per utilizzare sessioni crittate.
+Tramite uno script perl[1] è possibile gestire facilmente le utenze. Il software mantiene allineato il database con i relativi file di configurazione necessario per ogni utente.
+
+
+
+
 
 
 
