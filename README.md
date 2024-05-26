@@ -24,4 +24,23 @@ apt-get install vsftpd libpam-mysql
 ```
 VSFTPD non ha un supporto built-in per MySQL, per cui le libpam-mysql sono fondamentali per permettere a vsftpd di leggere gli utenti presenti su mysql.
 Aggiungiamo anche un utente di sistema per VSFTPD, che ci servirà in seguito:
+```bash
+useradd --home /home/vsftpd --gid nogroup -m --shell /bin/false vsftpd
+```
+Questo sarà l'utente di sistema con i cui permessi girerà il demone, aumentando la sicurezza del server.
+
+## Creazione di un database per VSFTPD
+Il nostro demone FTP è già in funzione, ma non è ancora collegato ad alcun database MySQL. Quindi apriamo la shell di MySQL e creiamo il nostro database vsftpd, con proprietario un utente vsftpd e password ftpdpass:
+```bash
+mysql -u root -p
+```
+```bash
+CREATE DATABASE vsftpd;
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP ON vsftpd.* TO 'vsftpd'@'localhost' IDENTIFIED BY 'ftpdpass';
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP ON vsftpd.* TO 'vsftpd'@'localhost.localdomain' IDENTIFIED BY 'ftpdpass';
+FLUSH PRIVILEGES;
+```
+
+
+
 
