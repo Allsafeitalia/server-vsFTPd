@@ -1,6 +1,6 @@
 # Installare un server vsFTPd con utenti virtuali su MySQL
 
-## Introduzione
+**Introduzione**
 
 Tra i vari server FTP disponibili in Debian, VSFTPD è a mio parere quello più snello, sicuro e prestazionale; inoltre, come ulteriore garanzia, è il server FTP scelto da Red Hat e consigliato da IBM.
 
