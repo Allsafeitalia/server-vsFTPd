@@ -23,4 +23,5 @@ L'installazione di VSFTPD è semplice:
 ```bash
 apt-get install vsftpd libpam-mysql
 
-
+```bach
+apt-get upgrade
