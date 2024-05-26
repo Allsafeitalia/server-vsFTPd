@@ -19,10 +19,9 @@ Supponiamo quindi di avere una situazione in cui vogliamo creare due utenti virt
 ## Installazione di VSFTPD
 
 L'installazione di VSFTPD è semplice:
-
 ```bash
 apt-get install vsftpd libpam-mysql
 ```
-ssdsd
-```bash
-tetetetetete
+VSFTPD non ha un supporto built-in per MySQL, per cui le libpam-mysql sono fondamentali per permettere a vsftpd di leggere gli utenti presenti su mysql.
+Aggiungiamo anche un utente di sistema per VSFTPD, che ci servirà in seguito:
+
