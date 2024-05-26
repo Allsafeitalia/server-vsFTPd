@@ -40,7 +40,26 @@ GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP ON vsftpd.* TO 'vsftpd'@'loca
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP ON vsftpd.* TO 'vsftpd'@'localhost.localdomain' IDENTIFIED BY 'ftpdpass';
 FLUSH PRIVILEGES;
 ```
-
+sostituendo ovviamente la stringa ftpdpass con la password che vogliamo utilizzare.
+Ora che abbiamo il database dobbiamo creare la tabella per memorizzare gli utenti virtuali del nostro server FTP. Restando sempre nella shell di MySQL diamo quindi i seguenti comandi:
+```bash
+USE vsftpd;
+```
+```bash
+CREATE TABLE `accounts` (
+`id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY ,
+`username` VARCHAR( 30 ) NOT NULL ,
+`pass` VARCHAR( 50 ) NOT NULL ,
+`homedir` VARCHAR( 900 ) NOT NULL ,
+`active` int(11) NOT NULL,
+UNIQUE (
+`username`
+)
+) ENGINE = MYISAM ;
+```
+```bash
+quit;
+```
 
 
 
